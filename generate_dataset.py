@@ -13,6 +13,8 @@ FRAME_SIZE = 30
 
 
 def check_invalid_value(data):
+    if len(data) < 75 + FRAME_SIZE + PREDICT_SIZE:
+        return True
     x = data[:, 0]
     min_val = np.min(x)
     max_diff = np.max(np.abs(np.diff(x)))
@@ -57,19 +59,17 @@ def calc_feature(data):
 
 
 def save_frame(feat, out_path, stock_id):
-    if len(feat) < 75:
-        return
     train_root = os.path.join(out_path, "train")
     test_root = os.path.join(out_path, "test")
     if not os.path.exists(train_root):
         os.makedirs(train_root)
     if not os.path.exists(test_root):
         os.makedirs(test_root)
-    start = 0
+    start = 75
     L = len(feat)
     X = []
     Y = []
-    while start + FRAME_SIZE + PREDICT_SIZE < L:
+    while start + FRAME_SIZE + PREDICT_SIZE <= L:
         end = start+FRAME_SIZE
         x = feat[start:end]
         y = np.max(feat[end:end+PREDICT_SIZE, 3])
@@ -79,14 +79,14 @@ def save_frame(feat, out_path, stock_id):
     X = np.array(X)
     Y = np.array(Y)
     X = X.transpose((0, 2, 1))
-    if len(X) > 60:
-        train_x = X[:-60]
-        train_y = Y[:-60]
+    if len(X) > 50:
+        train_x = X[:-50]
+        train_y = Y[:-50]
         train_fn = stock_id+"_"+str(len(train_x))+".mat"
         with open(os.path.join(train_root, train_fn), "wb") as ofs:
             pickle.dump([train_x, train_y], ofs)
-        test_x = X[-60:]
-        test_y = Y[-60:]
+        test_x = X[-50:]
+        test_y = Y[-50:]
         test_fn = stock_id+"_"+str(len(test_x))+".mat"
         with open(os.path.join(test_root, test_fn), "wb") as ofs:
             pickle.dump([test_x, test_y], ofs)

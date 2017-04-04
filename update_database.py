@@ -11,8 +11,7 @@ def main():
     url = "http://k-db.com/stocks/?download=csv"
     a, b = urllib.urlretrieve(url, "Data/tmp.csv")
     name = b.dict["content-disposition"].split(";")[1].split("=")[1]
-
-    if name.startswith("stocks"):
+    if not name.startswith("stocks"):
         print "Error: failed to get a daily file from web"
         exit()
 
@@ -20,7 +19,7 @@ def main():
 
     if name in files:
         print "Waning: downloaded data has already been in backup directory"
-        exit()
+        #exit()
 
     shutil.copyfile("Data/tmp.csv", "Data/backup/"+name)
 
@@ -36,8 +35,9 @@ def main():
             columns=[u"日付", u"始値", u"高値", u"安値", u"終値", u"出来高", u"売買代金"])
         fn = "Data/main/"+code+"_"+name+".csv"
         df2 = pd.read_csv(fn, encoding="SHIFT-JIS")
-        df3 = df1.append(df2)
-        df3.to_csv(fn, index=False, encoding="SHIFT-JIS")
+        if len(df2[df2[u"日付"]==day_str]) == 0:
+            df3 = df1.append(df2)
+            df3.to_csv(fn, index=False, encoding="SHIFT-JIS")
 
 
 if __name__ == "__main__":

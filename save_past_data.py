@@ -13,8 +13,6 @@ def main():
 
     df = pd.read_csv("Data/tosyo1_list.csv", encoding="SHIFT-JIS")
     for i, record in df.iterrows():
-        if i < 432:
-            continue
         print i, record[u"コード"], record[u"銘柄名"]
         code = record[u"コード"]
         name = record[u"銘柄名"]
@@ -25,7 +23,7 @@ def main():
             while not is_done:
                 try:
                     a, b = urllib.urlretrieve(url, "Data/tmp.csv")
-                    time.sleep(5)
+                    time.sleep(3)
                     fn = b.dict["content-disposition"].split(";")[1].split("=")[1]
                     is_done = True
                 except Exception as e:
