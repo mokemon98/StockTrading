@@ -19,7 +19,7 @@ import stock_dataset
 
 
 batch_size = 128
-n_epoch = 10
+n_epoch = 5
 thresh = 0.6
 
 
@@ -105,16 +105,24 @@ def summarise_result2(model, data_iter, n_test_data, dst_path):
                 pred_y_c2 = 1
             else:
                 pred_y_c2 = 0
-            res_list.append(np.array([true_y_c, pred_y_c2, pred_y_c], dtype=np.float16))
+            if pred_y_c > 0.5:
+                pred_y_c3 = 1
+            else:
+                pred_y_c3 = 0
+            res_list.append(np.array([true_y_c, pred_y_c2, pred_y_c, pred_y_c3], dtype=np.float16))
         data_count += batch_size
 
     res_list = np.array(res_list)
 
-    report = classification_report(res_list[:, 0], res_list[:, 1], target_names=["DOWN", "UP"])
-    with open(os.path.join(dst_path, "result.txt"), "w") as f:
+    report = classification_report(res_list[:, 0], res_list[:, 3], target_names=["DOWN", "UP"])
+    with open(os.path.join(dst_path, "result_05.txt"), "w") as f:
         f.write("%s" % report)
 
-    np.savetxt(os.path.join(dst_path, "result.csv"), res_list, fmt="%.4f",
+    report = classification_report(res_list[:, 0], res_list[:, 1], target_names=["DOWN", "UP"])
+    with open(os.path.join(dst_path, "result_06.txt"), "w") as f:
+        f.write("%s" % report)
+
+    np.savetxt(os.path.join(dst_path, "result.csv"), res_list[:, :3], fmt="%.4f",
         delimiter=",", header="true_class,pred_class,pred_li")
 
     model.train = True
@@ -148,7 +156,7 @@ def main():
     print('GPU: {}'.format(args.gpu))
 
     #model = MyChain()
-    model = MyChainLSTM(in_size=10, hidden_size=5, seq_size=30)
+    model = MyChainLSTM(in_size=12, hidden_size=5, seq_size=30)
     model.compute_accuracy = False
     optimizer = optimizers.Adam()
     optimizer.setup(model)

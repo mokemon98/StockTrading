@@ -80,9 +80,9 @@ class MyChainLSTM(Chain):
 
     def __init__(self, in_size, hidden_size, seq_size):
         super(MyChainLSTM, self).__init__(
-            # input_shape = (1, 10, 40)
             lstm1 = L.LSTM(in_size, hidden_size),
-            l1 = L.Linear(hidden_size*seq_size, 1)
+            l1 = L.Linear(hidden_size*seq_size, 50),
+            l2 = L.Linear(50, 1)
         )
         self.train = True
         self.in_size = in_size
@@ -112,7 +112,8 @@ class MyChainLSTM(Chain):
                 h = tmp
             else:
                 h = F.vstack([h, tmp])
-        o = self.l1(h)
+        h = F.dropout(F.relu(self.l1(h)), train=self.train)
+        o = self.l2(h)
         return o
 
 
