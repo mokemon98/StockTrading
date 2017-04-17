@@ -6,6 +6,9 @@ import numpy as np
 import feature as f
 import cPickle as pickle
 import math
+import argparse
+
+import config as c
 
 
 SHIFT_SIZE = 2
@@ -13,6 +16,8 @@ PREDICT_SIZE = 1
 FRAME_SIZE = 30
 TEST_SIZE = 30
 MIN_SIZE = 400
+CLOSING_AXIS = 3
+YIELD_AXIS = 4
 
 
 def check_invalid_value(data):
@@ -28,23 +33,21 @@ def check_invalid_value(data):
         return False
 
 
-def normalize(data):
+def normalize_zscore(data):
     data2 = data.copy()
-    x = data[:, 1]
-    max_val = np.max(x)
-    data2[:, :4] = data[:, :4] / max_val
-    x = data[:, 4]
-    max_val = np.max(x)
-    data2[:, 4] = data[:, 4] / max_val
+    mean = np.mean(data[75:, CLOSING_AXIS])
+    std = np.std(data[75:, CLOSING_AXIS])
+    for i in range(data.shape[1]):
+        data2[:, i] = (data[:, i] - mean) / std
     return data2
 
 
-def normalize_zscore(data):
+def normalize_zscore2(data):
     data2 = data.copy()
     for i in range(data.shape[1]):
-        mean = np.mean(data[75:, i])
-        std = np.std(data[75:, i])
-        data2[:, i] = (data[:, i] - mean) / std
+        mean2 = np.mean(data[75:, i])
+        std2 = np.std(data[75:, i])
+        data2[:, i] = (data[:, i] - mean2) / std2
     return data2
 
 
@@ -82,6 +85,7 @@ def save_frame(feat, closing, out_path, stock_id):
 
     train_root = os.path.join(out_path, "train")
     test_root = os.path.join(out_path, "test")
+
     if not os.path.exists(train_root):
         os.makedirs(train_root)
     if not os.path.exists(test_root):
@@ -105,6 +109,7 @@ def save_frame(feat, closing, out_path, stock_id):
     X = np.array(X, dtype=np.float32)
     Y = np.array(Y, dtype=np.float32)
     X = X.transpose((0, 2, 1))
+
     if len(X) > TEST_SIZE:
         train_x = X[:-TEST_SIZE]
         train_y = Y[:-TEST_SIZE]
@@ -124,13 +129,39 @@ def save_frame(feat, closing, out_path, stock_id):
             pickle.dump([train_x, train_y], ofs, protocol=2)
 
 
+def get_indices():
+    indices = None
+    root = os.path.join(c.data_root, "indices")
+    path_list = os.listdir(root)
+    path_list.sort()
+    for name in path_list:
+        df = pd.read_csv(os.path.join(root, name), encoding="SHIFT-JIS")
+        df2 = df[[u"終値"]]
+        if indices is None:
+            indices = np.array(df2)
+        else:
+            indices = np.hstack([indices, np.array(df2)])
+    return indices
+
+
 def main():
-    for name in os.listdir("Data/main"):
-        #if not name.startswith("2924"):
-        #    continue
+
+    parser = argparse.ArgumentParser(description='Stock Regression')
+    parser.add_argument('dst', default="")
+    args = parser.parse_args()
+
+    indices = get_indices()
+    indices = indices[::-1, :2]
+
+    df_ind = pd.read_csv(os.path.join(c.data_root, "indices", u"I101_日経平均株価.csv"), encoding="SHIFT-JIS")
+    df_ind2 = df_ind[[u"日付"]]
+
+    root = os.path.join(c.data_root, "main")
+    for name in os.listdir(root):
         print name
-        df = pd.read_csv("Data/main/"+name, encoding="SHIFT-JIS")
+        df = pd.read_csv(os.path.join(root, name), encoding="SHIFT-JIS")
         df2 = df[[u"始値", u"高値", u"安値", u"終値", u"出来高"]]
+        df3 = df[[u"日付"]]
         data = np.array(df2)
         flag = False
         for i in range(data.shape[0]):
@@ -144,9 +175,16 @@ def main():
         data = data[::-1]
         if check_invalid_value(data):
             continue
-        feat = calc_feature(data)
-        feat2 = normalize_zscore(feat)
-        save_frame(feat2, data[:, 3], "Data/output_class_and_rate_3", name.split("-")[0])
+        if df_ind2.ix[len(data)-1].values[0] != df3.ix[len(data)-1].values[0]:
+            print "Day Matching Error !!!"
+            print df_ind2.ix[len(data)-1].values[0], df3.ix[len(data)-1].values[0]
+            exit()
+        feat1 = calc_feature(data[:, :YIELD_AXIS])
+        feat1_2 = normalize_zscore(feat1)
+        feat2 = np.hstack([indices[-len(data):], data[:, YIELD_AXIS].reshape((len(data), 1))])
+        feat2_2 = normalize_zscore2(feat2)
+        feat3 = np.hstack([feat1_2, feat2_2])
+        save_frame(feat3, data[:, CLOSING_AXIS], args.dst, name.split("-")[0])
 
 
 if __name__ == "__main__":
