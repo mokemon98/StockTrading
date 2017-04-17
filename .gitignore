@@ -2,4 +2,8 @@
 *.sublime-project
 *.sublime-workspace
 Data/backup
-Data/main
+Data/main*
+Data/indices*
+Data/output*
+data_processing/tmp.csv
+training/result*
