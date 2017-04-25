@@ -22,9 +22,9 @@ class MyStockDataset(dataset.DatasetMixin):
         path, frame_id = self.data[i]
         with open(path, "rb") as ifs:
             stock = pickle.load(ifs)
-        x = stock[0][frame_id]
-        x = x.reshape((x.shape[0], x.shape[1]))
-        x = x.transpose((1, 0))
+        x = stock[0][frame_id][:, :9]
+        x = x.reshape((x.shape[0], 9))
+        #x = x.transpose((1, 0))
         y = stock[1][frame_id]
         y1 = y[0].reshape(1)
         y1 = y1.astype(np.int32)

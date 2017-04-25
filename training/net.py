@@ -79,8 +79,8 @@ class MyChain(Chain):
 class MyChainLSTM(Chain):
 
     def __init__(self, in_size, hidden_size, seq_size):
-        super(MyChainLSTM, self).__init__(
-            lstm1 = L.LSTM(in_size, hidden_size),
+        super(MyChainLSTM2, self).__init__(
+            lstm1 = L.NStepLSTM(1, in_size, hidden_size, 0.1),
             l1 = L.Linear(hidden_size*seq_size, 50),
             l2 = L.Linear(50, 1)
         )
@@ -89,64 +89,25 @@ class MyChainLSTM(Chain):
         self.hidden_size = hidden_size
         self.seq_size = seq_size
 
-    def __call__(self, x, t1):
-        c = self.predict(x)
-        loss1 = F.sigmoid_cross_entropy(c, t1, use_cudnn=False)
-        self.loss = loss1
+    def __call__(self, xs, ts):
+        os = self.predict(xs)
+        loss = F.sigmoid_cross_entropy(os, ts, use_cudnn=False)
+        self.loss = loss
         if math.isnan(self.loss.data):
             raise RuntimeError("Error in MyChain: loss.data is nan!")
         reporter.report({"loss": self.loss}, self)
         return self.loss
 
-    def forward(self, x):
-        c = self.predict(x)
-        c2 = F.sigmoid(c)
-        return c2
+    def forward(self, xs):
+        os = self.predict(xs)
+        os2 = F.sigmoid(os)
+        return os2
 
     def predict(self, x):
-        batch_size = x.shape[0]
-        for i in range(batch_size):
-            self.lstm1.reset_state()
-            tmp = F.expand_dims(self.lstm1(x[i]), 0)
-            if i == 0:
-                h = tmp
-            else:
-                h = F.vstack([h, tmp])
+        x2 = [item for item in x]
+        h = self.lstm1(None, None, x2, train=self.train)[2]
+        h = [F.expand_dims(item, 0) for item in h]
+        h = F.concat(h, 0)
         h = F.dropout(F.relu(self.l1(h)), train=self.train)
         o = self.l2(h)
-        return o
-
-
-class MyChainLSTM2(Chain):
-
-    def __init__(self, in_size, hidden_size, seq_size):
-        super(MyChainLSTM2, self).__init__(
-            # input_shape = (1, 10, 40)
-            lstm1 = L.NStepLSTM(1, in_size, hidden_size, 0.5),
-            l1 = L.Linear(hidden_size*seq_size, 1)
-        )
-        self.train = True
-        self.in_size = in_size
-        self.hidden_size = hidden_size
-        self.seq_size = seq_size
-
-    def __call__(self, x, t1):
-        c = self.predict(x)
-        loss1 = F.sigmoid_cross_entropy(c, t1, use_cudnn=False)
-        self.loss = loss1
-        if math.isnan(self.loss.data):
-            raise RuntimeError("Error in MyChain: loss.data is nan!")
-        reporter.report({"loss": self.loss}, self)
-        return self.loss
-
-    def forward(self, x):
-        c = self.predict(x)
-        c2 = F.sigmoid(c)
-        return c2
-
-    def predict(self, x):
-        from IPython import embed; embed()
-        x2 = [item for item in x]
-        h = self.lstm1(None, None, x2, train=self.train)
-        o = [self.l1(item) for item in h]
         return o
