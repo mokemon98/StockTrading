@@ -79,7 +79,7 @@ class MyChain(Chain):
 class MyChainLSTM(Chain):
 
     def __init__(self, in_size, hidden_size, seq_size):
-        super(MyChainLSTM2, self).__init__(
+        super(MyChainLSTM, self).__init__(
             lstm1 = L.NStepLSTM(1, in_size, hidden_size, 0.1),
             l1 = L.Linear(hidden_size*seq_size, 50),
             l2 = L.Linear(50, 1)
