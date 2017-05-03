@@ -56,7 +56,7 @@ def main():
     parser.add_argument('--out', default="result")
     parser.add_argument('--gpu', '-g', default=-1, type=int,
                         help='GPU ID (negative value indicates CPU)')
-    parser.add_argument('--parallel')
+    parser.add_argument('--parallel', action='store_true', default=False)
     args = parser.parse_args()
 
     print('GPU: {}'.format(args.gpu))
@@ -115,7 +115,7 @@ def main():
     trainer.extend(extensions.dump_graph('main/loss'))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
-    if args.parallel is None:
+    if not args.parallel:
         trainer.extend(extensions.ProgressBar())
     trainer.extend(out_accuracy(eval_model, test_iter, len(test_pairs), os.path.join(result_path, "valid"), args.gpu))
 
