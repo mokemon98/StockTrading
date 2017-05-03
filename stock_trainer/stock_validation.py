@@ -103,18 +103,18 @@ def summarise_result(model, data_iter, n_test_data, dst_path, device):
         true_list = true_list[li_sorted_idx]
         li_list = li_list[li_sorted_idx]
         pred_list = pred_list[li_sorted_idx]
-        rate_list = rate_list[li_sorted_idx]
+        rate_list2 = rate_list[li_sorted_idx]
 
         # output confusion matrix
         n = int(len(true_list) * thresh)
-        output_confusion_matrix(true_list, pred_list, rate_list, dst_path, prefix+"confusion_all")
-        output_confusion_matrix(true_list[:n], pred_list[:n], rate_list[:n], dst_path, prefix+"confusion_top")
+        output_confusion_matrix(true_list, pred_list, rate_list2, dst_path, prefix+"confusion_all")
+        output_confusion_matrix(true_list[:n], pred_list[:n], rate_list2[:n], dst_path, prefix+"confusion_top")
 
         # output all result
         true_list2 = np.expand_dims(true_list, 1)
         pred_list2 = np.expand_dims(pred_list, 1)
         li_list2 = np.expand_dims(li_list, 1)
-        rate_list2 = np.expand_dims(rate_list, 1) * 100
+        rate_list2 = np.expand_dims(rate_list2, 1) * 100
         np.savetxt(os.path.join(dst_path, prefix+"result.csv"),
             np.hstack([true_list2, pred_list2, li_list2, rate_list2]),
             fmt="%.4f", delimiter=",", header="true_class,pred_class,pred_li,rate")

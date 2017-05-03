@@ -50,12 +50,13 @@ def get_pairs(path):
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Stock Regression')
+    parser = argparse.ArgumentParser(description='Stock Classification')
     parser.add_argument('data_src', default="")
     parser.add_argument('valid_idx', default="0")
     parser.add_argument('--out', default="result")
     parser.add_argument('--gpu', '-g', default=-1, type=int,
                         help='GPU ID (negative value indicates CPU)')
+    parser.add_argument('--parallel')
     args = parser.parse_args()
 
     print('GPU: {}'.format(args.gpu))
@@ -114,7 +115,8 @@ def main():
     trainer.extend(extensions.dump_graph('main/loss'))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss']))
-    trainer.extend(extensions.ProgressBar())
+    if args.parallel is None:
+        trainer.extend(extensions.ProgressBar())
     trainer.extend(out_accuracy(eval_model, test_iter, len(test_pairs), os.path.join(result_path, "valid"), args.gpu))
 
     trainer.run()
