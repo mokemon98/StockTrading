@@ -119,23 +119,39 @@ def save_frame(feat, closing, out_root, stock_id):
         with open(os.path.join(out_path, data_fn), "wb") as ofs:
             pickle.dump([data_x, data_y], ofs, protocol=2)
 
-        # if len(X) > TEST_SIZE:
-        #     train_x = X[:-TEST_SIZE]
-        #     train_y = Y[:-TEST_SIZE]
-        #     train_fn = stock_id+"_"+str(len(train_x))+".mat"
-        #     with open(os.path.join(train_root, train_fn), "wb") as ofs:
-        #         pickle.dump([train_x, train_y], ofs, protocol=2)
-        #     test_x = X[-TEST_SIZE:]
-        #     test_y = Y[-TEST_SIZE:]
-        #     test_fn = stock_id+"_"+str(len(test_x))+".mat"
-        #     with open(os.path.join(test_root, test_fn), "wb") as ofs:
-        #         pickle.dump([test_x, test_y], ofs, protocol=2)
-        # else:
-        #     train_x = X
-        #     train_y = Y
-        #     train_fn = stock_id+"_"+str(len(train_x))+".mat"
-        #     with open(os.path.join(train_root, train_fn), "wb") as ofs:
-        #         pickle.dump([train_x, train_y], ofs, protocol=2)
+
+def save_sequence(feat, closing, out_root, stock_id):
+
+    start = 75
+    L = len(feat)
+
+    diff = np.diff(closing)
+    rate = diff / closing[:-1]
+    Y1 = [1 if x > 0 else 0 for x in diff.tolist()]
+    Y2 = [1 if x >= 0.01 else 0 for x in rate.tolist()]
+    Y3 = [1 if x >= 0.02 else 0 for x in rate.tolist()]
+
+    Y = np.array([Y1, Y2, Y3, rate], dtype=np.float32).T
+
+    X = np.array(feat[start:-1], dtype=np.float32)
+    Y = np.array(Y[start:], dtype=np.float32)
+
+    for i in range(CROSS_N):
+
+        out_path = os.path.join(out_root, str(i+1))
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+
+        start = i * TEST_SIZE
+        end = (i + 1) * TEST_SIZE + FRAME_SIZE - 1
+
+        if end < len(X):
+            data_x = X[start:end]
+            data_y = Y[start:end]
+            data_fn = stock_id+"_"+str(len(data_x))+".mat"
+
+            with open(os.path.join(out_path, data_fn), "wb") as ofs:
+                pickle.dump([data_x, data_y], ofs, protocol=2)
 
 
 def get_indices():
@@ -171,7 +187,7 @@ def main():
         df2 = df[[u"始値", u"高値", u"安値", u"終値", u"出来高"]]
         df3 = df[[u"日付"]]
         data = np.array(df2)
-        #print name, len(data)
+        print name, len(data)
         flag = False
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
@@ -189,11 +205,12 @@ def main():
             print df_ind2.ix[len(data)-1].values[0], df3.ix[len(data)-1].values[0]
             exit()
         feat1 = calc_feature(data[:, :YIELD_AXIS])
-        feat1_2 = normalize_zscore(feat1)
+        #feat1_2 = normalize_zscore(feat1)
         feat2 = np.hstack([indices[-len(data):], data[:, YIELD_AXIS].reshape((len(data), 1))])
-        feat2_2 = normalize_zscore2(feat2)
-        feat3 = np.hstack([feat1_2, feat2_2])
-        save_frame(feat3, data[:, CLOSING_AXIS], args.dst, name.split("-")[0])
+        #feat2_2 = normalize_zscore2(feat2)
+        feat3 = np.hstack([feat1, feat2])
+        #save_frame(feat3, data[:, CLOSING_AXIS], args.dst, name.split("-")[0])
+        save_sequence(feat3, data[:, CLOSING_AXIS], args.dst, name.split("-")[0])
 
 
 if __name__ == "__main__":

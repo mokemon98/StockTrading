@@ -1,9 +1,11 @@
 *.pyc
 *.sublime-project
 *.sublime-workspace
+*.ipynb
 Data/backup
 Data/main*
 Data/indices*
 Data/output*
 data_processing/tmp.csv
-training/result*
+training/old
+training/trial*/*result*
