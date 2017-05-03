@@ -12,14 +12,14 @@ import chainer.links as L
 from chainer import training, reporter, Chain, optimizers, dataset, cuda, Variable, serializers
 from chainer.training import extensions
 
-from net import MyChain, MyChainLSTM, MyChainBiDirectionalLSTM
+from net import MyChainLSTM, MyChainBiDirectionalLSTM
 import stock_dataset
 import stock_validation
 
 
 batch_size = 128
 n_epoch = 5
-y_axis = 1
+y_axis = [0, 1, 2]
 
 
 def save_model(model, path, device):
@@ -60,9 +60,9 @@ def main():
 
     print('GPU: {}'.format(args.gpu))
 
-    model = MyChainLSTM(in_size=9, hidden_size=5, seq_size=20, out_size=1,
-                        device=args.gpu,lstm_do_ratio=0.0, affine_do_ratio=0.2)
-    #model = MyChainBiDirectionalLSTM(in_size=9, hidden_size=5, seq_size=20,
+    model = MyChainLSTM(in_size=9, hidden_size=5, seq_size=20, out_size=len(y_axis),
+                        device=args.gpu, lstm_do_ratio=0.0, affine_do_ratio=0.2)
+    #model = MyChainBiDirectionalLSTM(in_size=9, hidden_size=5, seq_size=20, out_size=1,
     #                    device=args.gpu,lstm_do_ratio=0.0, affine_do_ratio=0.2)
     model.compute_accuracy = False
     optimizer = optimizers.Adam()

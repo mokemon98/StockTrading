@@ -23,16 +23,16 @@ MIN_SIZE = 1052
 
 
 def check_invalid_value(data):
-    #if len(data) < 75 + FRAME_SIZE + PREDICT_SIZE:
     if len(data) < MIN_SIZE:
-        return True
-    x = data[:, 0]
-    min_val = np.min(x)
-    max_diff = np.max(np.abs(np.diff(x)))
-    if max_diff > min_val * 5:
-        return True
+        return True  # invalid
+    x = data[:, CLOSING_AXIS]
+    diff = np.abs(np.diff(x))
+    rate = diff / x[:-1]
+    max_rate = np.max(rate)
+    if max_rate > 0.2:
+        return True  # invalid
     else:
-        return False
+        return False  # valid
 
 
 def normalize_zscore(data):
@@ -127,6 +127,7 @@ def save_sequence(feat, closing, out_root, stock_id):
 
     diff = np.diff(closing)
     rate = diff / closing[:-1]
+
     Y1 = [1 if x > 0 else 0 for x in diff.tolist()]
     Y2 = [1 if x >= 0.01 else 0 for x in rate.tolist()]
     Y3 = [1 if x >= 0.02 else 0 for x in rate.tolist()]
@@ -187,7 +188,6 @@ def main():
         df2 = df[[u"始値", u"高値", u"安値", u"終値", u"出来高"]]
         df3 = df[[u"日付"]]
         data = np.array(df2)
-        print name, len(data)
         flag = False
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
@@ -200,6 +200,7 @@ def main():
         data = data[::-1]
         if check_invalid_value(data):
             continue
+        print name, len(data)
         if df_ind2.ix[len(data)-1].values[0] != df3.ix[len(data)-1].values[0]:
             print "Day Matching Error !!!"
             print df_ind2.ix[len(data)-1].values[0], df3.ix[len(data)-1].values[0]

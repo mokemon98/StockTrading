@@ -67,6 +67,8 @@ class MyStockDataset2(dataset.DatasetMixin):
         x2 = (x - mean) / std
         #x2 = normalize_zscore(x)
         y = stock[1][end-1][self.y_axis]  # 0: 0.0%, 1: 0.1%, 2: 0.2%, 3: rate
-        y2 = y.reshape(1)
+        y2 = y.reshape(len(y))
         y2 = y2.astype(np.int32)
-        return x2, y2
+        rate = stock[1][end-1][-1]
+        rate = rate.reshape(1)
+        return x2, y2, rate
