@@ -78,7 +78,7 @@ class MyChain(Chain):
 
 class MyChainLSTM(Chain):
 
-    def __init__(self, in_size, hidden_size, seq_size, lstm_do_ratio=0.0, affine_do_ratio=0.5):
+    def __init__(self, in_size, hidden_size, seq_size, device, lstm_do_ratio=0.0, affine_do_ratio=0.5):
         super(MyChainLSTM, self).__init__(
             lstm1 = L.NStepLSTM(1, in_size, hidden_size, lstm_do_ratio),
             l1 = L.Linear(hidden_size*seq_size, 50),
