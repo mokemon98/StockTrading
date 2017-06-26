@@ -191,7 +191,7 @@ class MyChainLSTM3(Chain):
 
     def forward(self, xs):
         os = self.predict(xs)
-        os2 = F.sigmoid(os)
+        os2 = F.softmax(os)
         return os2
 
     def predict(self, x):

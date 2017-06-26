@@ -54,6 +54,16 @@ def output_confusion_matrix(true_list, pred_list, rate_list, dst_path, prefix):
     plot_confusion_matrix(cm , ["0", "1"], os.path.join(dst_path, prefix+".png"), title=title)
 
 
+def output_confusion_matrix_multi(true_list, pred_list, rate_list, dst_path, prefix, names, labels):
+    report = classification_report(true_list, pred_list, target_names=names, labels=labels)
+    with open(os.path.join(dst_path, prefix+".txt"), "w") as f:
+        f.write("%s" % report)
+
+    cm = confusion_matrix(true_list, pred_list, labels=labels)
+    title = "{:.2%}".format(np.mean(rate_list))
+    plot_confusion_matrix(cm , names, os.path.join(dst_path, prefix+".png"), title=title)
+
+
 def summarise_result(model, data_iter, n_test_data, dst_path, device):
 
     data_iter.current_position = 0
@@ -152,37 +162,26 @@ def summarise_result2(model, data_iter, n_test_data, dst_path, device):
         rate_list.extend(raw_z.flatten().tolist())
         data_count += batch_size
 
-    true_list_all = np.array(true_list_all)
+    true_list_all = np.array(true_list_all).flatten()
     li_list_all = np.array(li_list_all)
     rate_list = np.array(rate_list)
+    pred_list_all = np.argmax(li_list_all, axis=1)
 
-    for i in range(true_list_all.shape[1]):
+    output_confusion_matrix_multi(true_list_all, pred_list_all, rate_list, dst_path,
+            "confusion_all", ["Low", "Mid", "High"], [0, 1, 2])
 
-        prefix = str(i) + "_"
+    high_li_list = li_list_all[:, 2]
+    sorted_idx = high_li_list.argsort()[::-1]
 
-        true_list = true_list_all[:, i]
-        li_list = li_list_all[:, i]
-        pred_list = np.array([1 if x >= 0.5 else 0 for x in li_list])
+    n = int(len(true_list_all) * thresh)
 
-        # sort by likelihood
-        li_sorted_idx = li_list.argsort()[::-1]
-        true_list = true_list[li_sorted_idx]
-        li_list = li_list[li_sorted_idx]
-        pred_list = pred_list[li_sorted_idx]
-        rate_list2 = rate_list[li_sorted_idx]
+    true_list2 = true_list_all[sorted_idx][:n]
+    pred_list2 = pred_list_all[sorted_idx][:n]
+    rate_list2 = rate_list[sorted_idx][:n]
 
-        # output confusion matrix
-        n = int(len(true_list) * thresh)
-        output_confusion_matrix(true_list, pred_list, rate_list2, dst_path, prefix+"confusion_all")
-        output_confusion_matrix(true_list[:n], pred_list[:n], rate_list2[:n], dst_path, prefix+"confusion_top")
+    true_list3 = [0 if x!=2 else 1 for x in true_list2]
+    pred_list3 = [0 if x!=2 else 1 for x in pred_list2]
 
-        # output all result
-        true_list2 = np.expand_dims(true_list, 1)
-        pred_list2 = np.expand_dims(pred_list, 1)
-        li_list2 = np.expand_dims(li_list, 1)
-        rate_list2 = np.expand_dims(rate_list2, 1) * 100
-        np.savetxt(os.path.join(dst_path, prefix+"result.csv"),
-            np.hstack([true_list2, pred_list2, li_list2, rate_list2]),
-            fmt="%.4f", delimiter=",", header="true_class,pred_class,pred_li,rate")
+    output_confusion_matrix(true_list3, pred_list3, rate_list2, dst_path, "confusion_top")
 
-        data_iter.current_position = 0
+    data_iter.current_position = 0
